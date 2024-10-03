@@ -185,37 +185,37 @@ static int apply_tcp_socket_options(Manager *m){
         if (m->no_delay) {
                 r = setsockopt_int(m->socket, IPPROTO_TCP, TCP_NODELAY, true);
                 if (r < 0)
-                        log_debug_errno(r, "Failed to enable TCP_NODELAY mode, ignoring: %m");
+                        log_info_errno(r, "Failed to enable TCP_NODELAY mode, ignoring: %m");
         }
 
         if (m->send_buffer > 0) {
                 r = fd_set_sndbuf(m->socket, m->send_buffer, false);
                 if (r < 0)
-                        log_debug_errno(r, "TCP: SO_SNDBUF/SO_SNDBUFFORCE failed: %m");
+                        log_info_errno(r, "Failed to set TCP SO_SNDBUF/SO_SNDBUFFORCE to %zu: %m", m->send_buffer);
         }
 
         if (m->keep_alive) {
                 r = setsockopt_int(m->socket, SOL_SOCKET, SO_KEEPALIVE, true);
                 if (r < 0)
-                        log_debug_errno(r, "Failed to enable SO_KEEPALIVE: %m");
+                        log_info_errno(r, "Failed to enable SO_KEEPALIVE: %m");
         }
 
         if (timestamp_is_set(m->keep_alive_time)) {
                 r = setsockopt_int(m->socket, SOL_TCP, TCP_KEEPIDLE, m->keep_alive_time / USEC_PER_SEC);
                 if (r < 0)
-                        log_debug_errno(r, "TCP_KEEPIDLE failed: %m");
+                        log_info_errno(r, "Failed to set TCP_KEEPIDLE to %lu: %m", m->keep_alive_time / USEC_PER_SEC);
         }
 
         if (m->keep_alive_interval > 0) {
                 r = setsockopt_int(m->socket, SOL_TCP, TCP_KEEPINTVL, m->keep_alive_interval / USEC_PER_SEC);
                 if (r < 0)
-                        log_debug_errno(r, "TCP_KEEPINTVL failed: %m");
+                        log_info_errno(r, "Failed to set TCP_KEEPINTVL to %lu: %m", m->keep_alive_interval / USEC_PER_SEC);
         }
 
         if (m->keep_alive_cnt > 0) {
                 r = setsockopt_int(m->socket, SOL_TCP, TCP_KEEPCNT, m->keep_alive_cnt);
                 if (r < 0)
-                        log_debug_errno(r, "TCP_KEEPCNT failed: %m");
+                        log_info_errno(r, "Failed to set TCP_KEEPCNT to %u: %m", m->keep_alive_cnt);
         }
 
         return 0;
@@ -248,12 +248,12 @@ int manager_open_network_socket(Manager *m) {
                 case SYSLOG_TRANSMISSION_PROTOCOL_UDP: {
                         r = setsockopt_int(m->socket, IPPROTO_IP, IP_MULTICAST_LOOP, true);
                         if (r < 0)
-                                log_debug_errno(errno, "UDP: Failed to set IP_MULTICAST_LOOP: %m");
+                                log_info_errno(errno, "UDP: Failed to set IP_MULTICAST_LOOP: %m");
 
                         if (m->send_buffer > 0) {
                                 r = fd_set_sndbuf(m->socket, m->send_buffer, false);
                                 if (r < 0)
-                                        log_debug_errno(r, "UDP: SO_SNDBUF/SO_SNDBUFFORCE failed: %m");
+                                        log_info_errno(r, "Failed to set UDP SO_SNDBUF/SO_SNDBUFFORCE to %zu: %m", m->send_buffer);
                         }}
 
                         break;
@@ -269,7 +269,7 @@ int manager_open_network_socket(Manager *m) {
 
         r = fd_nonblock(m->socket, true);
         if (r < 0)
-                log_debug_errno(errno, "Failed to set socket='%d' nonblock: %m", m->socket);
+                log_warning_errno(errno, "Failed to set socket='%d' nonblock: %m", m->socket);
 
         r = manager_network_connect_socket(m);
         if (r < 0)

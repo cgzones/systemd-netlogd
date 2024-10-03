@@ -184,7 +184,7 @@ static int manager_read_journal_input(Manager *m) {
 
         r = sd_journal_get_cursor(m->journal, &cursor);
         if (r < 0)
-                return log_error_errno(r, "Failed to get cursor: %m");
+                return log_error_errno(r, "Failed to get cursor for read: %m");
 
         log_debug("Reading from journal cursor=%s", cursor);
 
@@ -290,6 +290,8 @@ static int update_cursor_state(Manager *m) {
  finish:
         if (r < 0)
                 log_error_errno(r, "Failed to save state %s: %m", m->state_file);
+        else
+                log_debug("Saved last cursor %s", m->last_cursor);
 
         if (temp_path)
                 (void) unlink(temp_path);
@@ -342,7 +344,7 @@ static int process_journal_input(Manager *m) {
 
         r = sd_journal_get_cursor(m->journal, &cursor);
         if (r < 0) {
-                log_error_errno(r, "Failed to get cursor: %m");
+                log_error_errno(r, "Failed to get cursor for update: %m");
                 cursor = mfree(cursor);
         }
 
@@ -362,7 +364,7 @@ static int manager_journal_event_handler(sd_event_source *event, int fd, uint32_
         assert(m->journal_watch_fd == fd);
 
         if (revents & EPOLLHUP) {
-                log_debug("Received HUP");
+                log_info("Received HUP");
                 return 0;
         }
 
@@ -402,6 +404,8 @@ static int manager_signal_event_handler(sd_event_source *event, const struct sig
         assert(m);
 
         log_received_signal(LOG_INFO, si);
+
+        log_debug("Signal handler");
 
         manager_disconnect(m);
 
@@ -468,6 +472,8 @@ static int manager_journal_monitor_listen(Manager *m) {
 static int manager_retry_connect(sd_event_source *source, usec_t usec, void *userdata) {
         Manager *m = ASSERT_PTR(userdata);
 
+        log_debug("Initiating connect retry ...");
+
         return manager_connect(m);
 }
 
@@ -478,6 +484,8 @@ int manager_connect(Manager *m) {
 
         if (m->resolving)
                 return 0;
+
+        log_debug("Pre-connecting network ...");
 
         manager_disconnect(m);
 
@@ -647,6 +655,8 @@ static int manager_network_monitor_listen(Manager *m) {
 void manager_free(Manager *m) {
         if (!m)
                 return;
+
+        log_debug("Free'ing manager");
 
         manager_disconnect(m);
 
